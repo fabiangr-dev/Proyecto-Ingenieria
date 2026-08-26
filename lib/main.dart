@@ -1,0 +1,304 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'HMI Maquina Dobladora',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF1E2329),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF5F7A8D),
+          secondary: Color(0xFF8EA1AE),
+          surface: Color(0xFF2B323B),
+          error: Color(0xFFB85B5B),
+        ),
+        textTheme: GoogleFonts.rajdhaniTextTheme().copyWith(
+          headlineSmall: GoogleFonts.rajdhani(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFFE4E8EC),
+            letterSpacing: 0.8,
+          ),
+          titleMedium: GoogleFonts.rajdhani(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFFD8DEE4),
+            letterSpacing: 0.6,
+          ),
+          bodyMedium: GoogleFonts.rajdhani(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFFC8D0D8),
+            letterSpacing: 0.4,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          color: const Color(0xFF2B323B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Color(0xFF3E4A56), width: 1.2),
+          ),
+        ),
+      ),
+      home: const HmiHomePage(),
+    );
+  }
+}
+
+class HmiHomePage extends StatelessWidget {
+  const HmiHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF252C34),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'MAQUINA DOBLADORA AUTOMATICA',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            Text(
+              'HMI - INTERFAZ DE USUARIO',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF93A5B5),
+                    fontSize: 13,
+                  ),
+            ),
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF33404C),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF546574)),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.wifi, size: 16, color: Color(0xFF9AB7C9)),
+                  SizedBox(width: 6),
+                  Text('CONECTADA'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _statusPanel(context),
+          const SizedBox(height: 18),
+          _operationPanel(context),
+          const SizedBox(height: 18),
+          _palletPanel(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusPanel(BuildContext context) {
+    return Card(
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 220),
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle(context, 'Estado de la Maquina'),
+            const SizedBox(height: 12),
+            _statusRow(context, 'Estado', 'IDLE / LISTA'),
+            _statusRow(context, 'Ciclo actual', 'STANDARD_FOLDING'),
+            _statusRow(context, 'Etapa', '2 / 4'),
+            _statusRow(context, 'Progreso', '50 %'),
+            const SizedBox(height: 14),
+            LinearProgressIndicator(
+              minHeight: 10,
+              value: 0.5,
+              color: const Color(0xFF8CA5B5),
+              backgroundColor: const Color(0xFF394652),
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _operationPanel(BuildContext context) {
+    return Card(
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 250),
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle(context, 'Operacion y Seguridad'),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _actionButton(context, 'INICIAR', Icons.play_arrow, 'Iniciar'),
+                _actionButton(context, 'DETENER', Icons.stop, 'Detener'),
+                _actionButton(context, 'RESET', Icons.replay, 'Reset'),
+                _actionButton(
+                  context,
+                  'MODO MANUAL',
+                  Icons.precision_manufacturing,
+                  'Modo manual',
+                ),
+                _actionButton(
+                  context,
+                  'PARO EMERGENCIA',
+                  Icons.warning_amber,
+                  'Paro de emergencia',
+                ),
+                _actionButton(
+                  context,
+                  'RECONEXION',
+                  Icons.wifi,
+                  'Reconexion',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _palletPanel(BuildContext context) {
+    const palletLabels = <String>['P1°', 'P2°', 'P3°', 'P4°', 'P5°'];
+
+    return Card(
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 220),
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle(context, 'Modo Manual'),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: palletLabels
+                  .map(
+                    (label) => _actionButton(
+                      context,
+                      label,
+                      Icons.sync_alt,
+                      'Paleta $label',
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium,
+    );
+  }
+
+  Widget _statusRow(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF98A6B2),
+                  ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFE2E8EE),
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionButton(
+    BuildContext context,
+    String label,
+    IconData icon,
+    String pressedValue,
+  ) {
+    return OutlinedButton.icon(
+      onPressed: () => _showPressedDialog(context, pressedValue),
+      icon: Icon(icon, size: 18, color: const Color(0xFFB7C4CF)),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(176, 56),
+        foregroundColor: const Color(0xFFE2E8EE),
+        side: const BorderSide(color: Color(0xFF536474)),
+        backgroundColor: const Color(0xFF313A44),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  Future<void> _showPressedDialog(BuildContext context, String option) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2A323B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: Color(0xFF495867)),
+          ),
+          title: Text(
+            'Accion detectada',
+            style: Theme.of(dialogContext).textTheme.titleMedium,
+          ),
+          content: Text(
+            'Se presiono: $option',
+            style: Theme.of(dialogContext).textTheme.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
