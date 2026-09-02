@@ -68,13 +68,15 @@ class HmiHomePage extends StatefulWidget {
 
 class _HmiHomePageState extends State<HmiHomePage> {
   final TextEditingController _esp32Controller = TextEditingController(
-    text: 'http://192.168.1.50/api/test',
+    text: 'http://192.168.1.72/api/test',
   );
   bool _isSending = false;
+  bool _isConnected = false;
 
-  Future<void> _sendTestSignal() async {
+  Future<void> _sendCommand(String buttonLabel, String command) async {
     setState(() {
       _isSending = true;
+      _isConnected = false;
     });
 
     try {
@@ -84,18 +86,22 @@ class _HmiHomePageState extends State<HmiHomePage> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'type': 'command',
-          'command': 'test_signal',
+          'command': command,
+          'button': buttonLabel,
         }),
       ).timeout(const Duration(seconds: 5));
 
       if (!mounted) return;
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        _showResultDialog(
-          'Señal enviada',
-          'Comando de prueba enviado al ESP32 en $uri',
-        );
+        setState(() {
+          _isConnected = true;
+        });
+        _showPressedDialog(context, buttonLabel);
       } else {
+        setState(() {
+          _isConnected = false;
+        });
         _showResultDialog(
           'Error de comunicación',
           'ESP32 respondió con código ${response.statusCode}',
@@ -103,6 +109,9 @@ class _HmiHomePageState extends State<HmiHomePage> {
       }
     } catch (e) {
       if (!mounted) return;
+      setState(() {
+        _isConnected = false;
+      });
       _showResultDialog(
         'Fallo de red',
         'No se pudo contactar al ESP32. Verifica la IP y la conexión Wi‑Fi.\n\nError: $e',
@@ -203,15 +212,27 @@ class _HmiHomePageState extends State<HmiHomePage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF33404C),
+                color: _isConnected
+                    ? const Color(0xFF33404C)
+                    : const Color(0xFF3A2B2B),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF546574)),
+                border: Border.all(
+                  color: _isConnected
+                      ? const Color(0xFF546574)
+                      : const Color(0xFF8F4F4F),
+                ),
               ),
               child: Row(
-                children: const [
-                  Icon(Icons.wifi, size: 16, color: Color(0xFF9AB7C9)),
-                  SizedBox(width: 6),
-                  Text('CONECTADA'),
+                children: [
+                  Icon(
+                    Icons.wifi,
+                    size: 16,
+                    color: _isConnected
+                        ? const Color(0xFF9AB7C9)
+                        : const Color(0xFFEB8E8E),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(_isConnected ? 'CONECTADA' : 'DESCONECTADA'),
                 ],
               ),
             ),
@@ -273,33 +294,47 @@ class _HmiHomePageState extends State<HmiHomePage> {
               spacing: 12,
               runSpacing: 12,
               children: [
-                _actionButton(context, 'INICIAR', Icons.play_arrow, 'Iniciar'),
-                _actionButton(context, 'DETENER', Icons.stop, 'Detener'),
-                _actionButton(context, 'RESET', Icons.replay, 'Reset'),
+                _actionButton(
+                  context,
+                  'INICIAR',
+                  Icons.play_arrow,
+                  'INICIAR',
+                  onPressed: _isSending ? null : () => _sendCommand('INICIAR', 'start_machine'),
+                ),
+                _actionButton(
+                  context,
+                  'DETENER',
+                  Icons.stop,
+                  'DETENER',
+                  onPressed: _isSending ? null : () => _sendCommand('DETENER', 'stop_machine'),
+                ),
+                _actionButton(
+                  context,
+                  'RESET',
+                  Icons.replay,
+                  'RESET',
+                  onPressed: _isSending ? null : () => _sendCommand('RESET', 'reset_machine'),
+                ),
                 _actionButton(
                   context,
                   'MODO MANUAL',
                   Icons.precision_manufacturing,
-                  'Modo manual',
+                  'MODO MANUAL',
+                  onPressed: _isSending ? null : () => _sendCommand('MODO MANUAL', 'manual_mode'),
                 ),
                 _actionButton(
                   context,
                   'PARO EMERGENCIA',
                   Icons.warning_amber,
-                  'Paro de emergencia',
+                  'PARO EMERGENCIA',
+                  onPressed: _isSending ? null : () => _sendCommand('PARO EMERGENCIA', 'emergency_stop'),
                 ),
                 _actionButton(
                   context,
                   'RECONEXION',
                   Icons.wifi,
-                  'Reconexion',
-                ),
-                _actionButton(
-                  context,
-                  'PRUEBA',
-                  Icons.wifi_tethering,
-                  'Prueba',
-                  onPressed: _isSending ? null : _sendTestSignal,
+                  'RECONEXION',
+                  onPressed: _isSending ? null : () => _sendCommand('RECONEXION', 'reconnect'),
                 ),
               ],
             ),
@@ -348,6 +383,12 @@ class _HmiHomePageState extends State<HmiHomePage> {
                       label,
                       Icons.sync_alt,
                       'Paleta $label',
+                      onPressed: _isSending
+                          ? null
+                          : () => _sendCommand(
+                                label.replaceAll('°', ''),
+                                'pallet_${label.replaceAll('°', '').toLowerCase()}',
+                              ),
                     ),
                   )
                   .toList(),
