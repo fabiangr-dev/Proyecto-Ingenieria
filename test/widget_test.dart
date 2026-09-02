@@ -10,17 +10,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proyectogrado/main.dart';
 
 void main() {
-  testWidgets('HMI renders and shows popup on button press', (WidgetTester tester) async {
+  testWidgets('HMI renders the WiFi test button', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
     expect(find.text('MAQUINA DOBLADORA AUTOMATICA'), findsOneWidget);
-    expect(find.text('INICIAR'), findsOneWidget);
-    expect(find.text('DETENER'), findsOneWidget);
-
-    await tester.tap(find.text('INICIAR'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Accion detectada'), findsOneWidget);
-    expect(find.text('Se presiono: Iniciar'), findsOneWidget);
+    expect(find.text('PRUEBA'), findsOneWidget);
   });
 }

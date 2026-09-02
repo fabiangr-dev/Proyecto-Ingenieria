@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const MyApp());
@@ -56,8 +59,122 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HmiHomePage extends StatelessWidget {
+class HmiHomePage extends StatefulWidget {
   const HmiHomePage({super.key});
+
+  @override
+  State<HmiHomePage> createState() => _HmiHomePageState();
+}
+
+class _HmiHomePageState extends State<HmiHomePage> {
+  final TextEditingController _esp32Controller = TextEditingController(
+    text: 'http://192.168.1.50/api/test',
+  );
+  bool _isSending = false;
+
+  Future<void> _sendTestSignal() async {
+    setState(() {
+      _isSending = true;
+    });
+
+    try {
+      final uri = Uri.parse(_esp32Controller.text.trim());
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'type': 'command',
+          'command': 'test_signal',
+        }),
+      ).timeout(const Duration(seconds: 5));
+
+      if (!mounted) return;
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        _showResultDialog(
+          'Señal enviada',
+          'Comando de prueba enviado al ESP32 en $uri',
+        );
+      } else {
+        _showResultDialog(
+          'Error de comunicación',
+          'ESP32 respondió con código ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showResultDialog(
+        'Fallo de red',
+        'No se pudo contactar al ESP32. Verifica la IP y la conexión Wi‑Fi.\n\nError: $e',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _showPressedDialog(BuildContext context, String option) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2A323B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: Color(0xFF495867)),
+          ),
+          title: Text(
+            'Accion detectada',
+            style: Theme.of(dialogContext).textTheme.titleMedium,
+          ),
+          content: Text(
+            'Se presiono: $option',
+            style: Theme.of(dialogContext).textTheme.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showResultDialog(String title, String message) async {
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2A323B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: Color(0xFF495867)),
+          ),
+          title: Text(
+            title,
+            style: Theme.of(dialogContext).textTheme.titleMedium,
+          ),
+          content: Text(
+            message,
+            style: Theme.of(dialogContext).textTheme.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +294,31 @@ class HmiHomePage extends StatelessWidget {
                   Icons.wifi,
                   'Reconexion',
                 ),
+                _actionButton(
+                  context,
+                  'PRUEBA',
+                  Icons.wifi_tethering,
+                  'Prueba',
+                  onPressed: _isSending ? null : _sendTestSignal,
+                ),
               ],
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _esp32Controller,
+              style: Theme.of(context).textTheme.bodyMedium,
+              decoration: InputDecoration(
+                labelText: 'ESP32 URL',
+                labelStyle: const TextStyle(color: Color(0xFFB7C4CF)),
+                enabledBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF536474)),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF8CA5B5)),
+                ),
+                filled: true,
+                fillColor: const Color(0xFF262E36),
+              ),
             ),
           ],
         ),
@@ -256,10 +397,11 @@ class HmiHomePage extends StatelessWidget {
     BuildContext context,
     String label,
     IconData icon,
-    String pressedValue,
-  ) {
+    String pressedValue, {
+    VoidCallback? onPressed,
+  }) {
     return OutlinedButton.icon(
-      onPressed: () => _showPressedDialog(context, pressedValue),
+      onPressed: onPressed ?? () => _showPressedDialog(context, pressedValue),
       icon: Icon(icon, size: 18, color: const Color(0xFFB7C4CF)),
       label: Text(label),
       style: OutlinedButton.styleFrom(
@@ -270,35 +412,6 @@ class HmiHomePage extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-    );
-  }
-
-  Future<void> _showPressedDialog(BuildContext context, String option) async {
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF2A323B),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: Color(0xFF495867)),
-          ),
-          title: Text(
-            'Accion detectada',
-            style: Theme.of(dialogContext).textTheme.titleMedium,
-          ),
-          content: Text(
-            'Se presiono: $option',
-            style: Theme.of(dialogContext).textTheme.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cerrar'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
