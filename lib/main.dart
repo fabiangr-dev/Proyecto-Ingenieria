@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -68,35 +69,155 @@ class HmiHomePage extends StatefulWidget {
 
 class _HmiHomePageState extends State<HmiHomePage> {
   final TextEditingController _esp32Controller = TextEditingController(
-    text: 'http://192.168.1.72/api/test',
+    text: 'http://192.168.1.68',
   );
   bool _isSending = false;
   bool _isConnected = false;
+  Timer? _connectionTimer;
 
-  Future<void> _sendCommand(String buttonLabel, String command) async {
+  Uri _endpoint(String path) {
+    final base = _esp32Controller.text.trim().replaceFirst(RegExp(r'/$'), '');
+    return Uri.parse('$base$path');
+  }
+
+  @override
+  void dispose() {
+    _connectionTimer?.cancel();
+    _esp32Controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _connect() async {
+    await _sendConnectionRequest(
+      path: '/api/connect',
+      buttonLabel: 'CONECTAR',
+      successMessage: 'Conexion establecida con el ESP32.',
+    );
+  }
+
+  Future<void> _disconnect() async {
+    _connectionTimer?.cancel();
+    await _sendConnectionRequest(
+      path: '/api/disconnect',
+      buttonLabel: 'DESCONECTAR',
+      successMessage: 'Conexion cerrada con el ESP32.',
+      disconnectOnSuccess: true,
+    );
+  }
+
+  Future<void> _sendConnectionRequest({
+    required String path,
+    required String buttonLabel,
+    required String successMessage,
+    bool disconnectOnSuccess = false,
+  }) async {
+    if (_isSending) return;
+
     setState(() {
       _isSending = true;
-      _isConnected = false;
     });
 
     try {
-      final uri = Uri.parse(_esp32Controller.text.trim());
+      final body = jsonEncode({'type': 'connection', 'button': buttonLabel});
       final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'type': 'command',
-          'command': command,
-          'button': buttonLabel,
-        }),
+        _endpoint(path),
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': utf8.encode(body).length.toString(),
+        },
+        body: body,
       ).timeout(const Duration(seconds: 5));
 
       if (!mounted) return;
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         setState(() {
-          _isConnected = true;
+          _isConnected = !disconnectOnSuccess;
         });
+        if (disconnectOnSuccess) {
+          _connectionTimer?.cancel();
+        } else {
+          _startConnectionHeartbeat();
+        }
+        _showResultDialog('Conexion', successMessage);
+      } else {
+        setState(() {
+          _isConnected = false;
+        });
+        _showResultDialog(
+          'Conexion rechazada',
+          'El ESP32 respondio con codigo ${response.statusCode}.',
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isConnected = false;
+      });
+      _showResultDialog(
+        'Fallo de conexion',
+        'No se pudo establecer comunicacion con el ESP32.\n\n$error',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
+  }
+
+  void _startConnectionHeartbeat() {
+    _connectionTimer?.cancel();
+    _connectionTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      try {
+        final response = await http.get(_endpoint('/api/state'))
+            .timeout(const Duration(seconds: 3));
+        if (!mounted) return;
+        setState(() {
+          _isConnected = response.statusCode >= 200 && response.statusCode < 300;
+        });
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _isConnected = false;
+          });
+        }
+      }
+    });
+  }
+
+  Future<void> _sendCommand(String buttonLabel, String command) async {
+    if (!_isConnected || _isSending) {
+      _showResultDialog(
+        'Conexion requerida',
+        'Presiona CONECTAR antes de enviar comandos.',
+      );
+      return;
+    }
+
+    setState(() {
+      _isSending = true;
+    });
+
+    try {
+      final body = jsonEncode({
+        'type': 'command',
+        'command': command,
+        'button': buttonLabel,
+      });
+      final response = await http.post(
+        _endpoint('/api/command'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': utf8.encode(body).length.toString(),
+        },
+        body: body,
+      ).timeout(const Duration(seconds: 5));
+
+      if (!mounted) return;
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         _showPressedDialog(context, buttonLabel);
       } else {
         setState(() {
@@ -331,10 +452,12 @@ class _HmiHomePageState extends State<HmiHomePage> {
                 ),
                 _actionButton(
                   context,
-                  'RECONEXION',
-                  Icons.wifi,
-                  'RECONEXION',
-                  onPressed: _isSending ? null : () => _sendCommand('RECONEXION', 'reconnect'),
+                  _isConnected ? 'DESCONECTAR' : 'CONECTAR',
+                  _isConnected ? Icons.wifi_off : Icons.wifi,
+                  _isConnected ? 'DESCONECTAR' : 'CONECTAR',
+                  onPressed: _isSending
+                      ? null
+                      : (_isConnected ? _disconnect : _connect),
                 ),
               ],
             ),
@@ -343,7 +466,7 @@ class _HmiHomePageState extends State<HmiHomePage> {
               controller: _esp32Controller,
               style: Theme.of(context).textTheme.bodyMedium,
               decoration: InputDecoration(
-                labelText: 'ESP32 URL',
+                labelText: 'ESP32 URL base',
                 labelStyle: const TextStyle(color: Color(0xFFB7C4CF)),
                 enabledBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: Color(0xFF536474)),
