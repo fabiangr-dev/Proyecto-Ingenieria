@@ -1,7 +1,7 @@
 #include <WiFi.h>
 
-const char* ssid = "FIBRAZO-63530";
-const char* password = "Ygranados0084";
+const char* accessPointSsid = "HMI-ESP32";
+const char* accessPointPassword = "HMI-12345678";
 
 WiFiServer server(80);
 bool hmiConnected = false;
@@ -180,20 +180,20 @@ void setup() {
 
   Serial.println();
   Serial.println("Iniciando ESP32...");
-  Serial.println("Conectando a WiFi...");
+  Serial.println("Iniciando punto de acceso WiFi...");
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  WiFi.mode(WIFI_AP);
+  if (!WiFi.softAP(accessPointSsid, accessPointPassword)) {
+    Serial.println("Error al iniciar el punto de acceso WiFi.");
+    return;
   }
 
   Serial.println();
-  Serial.println("WiFi conectada.");
+  Serial.println("Punto de acceso WiFi iniciado.");
+  Serial.print("Nombre de red: ");
+  Serial.println(accessPointSsid);
   Serial.print("IP del ESP32: ");
-  Serial.println(WiFi.localIP());
+  Serial.println(WiFi.softAPIP());
 
   server.begin();
   Serial.println("Servidor HTTP iniciado.");

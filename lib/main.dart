@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
           surface: Color(0xFF2B323B),
           error: Color(0xFFB85B5B),
         ),
-        textTheme: GoogleFonts.rajdhaniTextTheme().copyWith(
+        textTheme: ThemeData.dark().textTheme.copyWith(
           headlineSmall: GoogleFonts.rajdhani(
             fontSize: 24,
             fontWeight: FontWeight.w700,
@@ -69,7 +69,7 @@ class HmiHomePage extends StatefulWidget {
 
 class _HmiHomePageState extends State<HmiHomePage> {
   final TextEditingController _esp32Controller = TextEditingController(
-    text: 'http://192.168.1.68',
+    text: 'http://192.168.4.1',
   );
   bool _isSending = false;
   bool _isConnected = false;
@@ -119,14 +119,16 @@ class _HmiHomePageState extends State<HmiHomePage> {
 
     try {
       final body = jsonEncode({'type': 'connection', 'button': buttonLabel});
-      final response = await http.post(
-        _endpoint(path),
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': utf8.encode(body).length.toString(),
-        },
-        body: body,
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .post(
+            _endpoint(path),
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': utf8.encode(body).length.toString(),
+            },
+            body: body,
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (!mounted) return;
 
@@ -171,11 +173,13 @@ class _HmiHomePageState extends State<HmiHomePage> {
     _connectionTimer?.cancel();
     _connectionTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
       try {
-        final response = await http.get(_endpoint('/api/state'))
+        final response = await http
+            .get(_endpoint('/api/state'))
             .timeout(const Duration(seconds: 3));
         if (!mounted) return;
         setState(() {
-          _isConnected = response.statusCode >= 200 && response.statusCode < 300;
+          _isConnected =
+              response.statusCode >= 200 && response.statusCode < 300;
         });
       } catch (_) {
         if (mounted) {
@@ -206,14 +210,16 @@ class _HmiHomePageState extends State<HmiHomePage> {
         'command': command,
         'button': buttonLabel,
       });
-      final response = await http.post(
-        _endpoint('/api/command'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': utf8.encode(body).length.toString(),
-        },
-        body: body,
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .post(
+            _endpoint('/api/command'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': utf8.encode(body).length.toString(),
+            },
+            body: body,
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (!mounted) return;
 
@@ -321,9 +327,9 @@ class _HmiHomePageState extends State<HmiHomePage> {
             Text(
               'HMI - INTERFAZ DE USUARIO',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF93A5B5),
-                    fontSize: 13,
-                  ),
+                color: const Color(0xFF93A5B5),
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -420,35 +426,45 @@ class _HmiHomePageState extends State<HmiHomePage> {
                   'INICIAR',
                   Icons.play_arrow,
                   'INICIAR',
-                  onPressed: _isSending ? null : () => _sendCommand('INICIAR', 'start_machine'),
+                  onPressed: _isSending
+                      ? null
+                      : () => _sendCommand('INICIAR', 'start_machine'),
                 ),
                 _actionButton(
                   context,
                   'DETENER',
                   Icons.stop,
                   'DETENER',
-                  onPressed: _isSending ? null : () => _sendCommand('DETENER', 'stop_machine'),
+                  onPressed: _isSending
+                      ? null
+                      : () => _sendCommand('DETENER', 'stop_machine'),
                 ),
                 _actionButton(
                   context,
                   'RESET',
                   Icons.replay,
                   'RESET',
-                  onPressed: _isSending ? null : () => _sendCommand('RESET', 'reset_machine'),
+                  onPressed: _isSending
+                      ? null
+                      : () => _sendCommand('RESET', 'reset_machine'),
                 ),
                 _actionButton(
                   context,
                   'MODO MANUAL',
                   Icons.precision_manufacturing,
                   'MODO MANUAL',
-                  onPressed: _isSending ? null : () => _sendCommand('MODO MANUAL', 'manual_mode'),
+                  onPressed: _isSending
+                      ? null
+                      : () => _sendCommand('MODO MANUAL', 'manual_mode'),
                 ),
                 _actionButton(
                   context,
                   'PARO EMERGENCIA',
                   Icons.warning_amber,
                   'PARO EMERGENCIA',
-                  onPressed: _isSending ? null : () => _sendCommand('PARO EMERGENCIA', 'emergency_stop'),
+                  onPressed: _isSending
+                      ? null
+                      : () => _sendCommand('PARO EMERGENCIA', 'emergency_stop'),
                 ),
                 _actionButton(
                   context,
@@ -466,7 +482,9 @@ class _HmiHomePageState extends State<HmiHomePage> {
               controller: _esp32Controller,
               style: Theme.of(context).textTheme.bodyMedium,
               decoration: InputDecoration(
-                labelText: 'ESP32 URL base',
+                labelText: 'URL del ESP32 en la red HMI-ESP32',
+                helperText:
+                    'Conecta primero el dispositivo a HMI-ESP32 (clave: HMI-12345678)',
                 labelStyle: const TextStyle(color: Color(0xFFB7C4CF)),
                 enabledBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: Color(0xFF536474)),
@@ -509,9 +527,9 @@ class _HmiHomePageState extends State<HmiHomePage> {
                       onPressed: _isSending
                           ? null
                           : () => _sendCommand(
-                                label.replaceAll('°', ''),
-                                'pallet_${label.replaceAll('°', '').toLowerCase()}',
-                              ),
+                              label.replaceAll('°', ''),
+                              'pallet_${label.replaceAll('°', '').toLowerCase()}',
+                            ),
                     ),
                   )
                   .toList(),
@@ -523,10 +541,7 @@ class _HmiHomePageState extends State<HmiHomePage> {
   }
 
   Widget _sectionTitle(BuildContext context, String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium,
-    );
+    return Text(title, style: Theme.of(context).textTheme.titleMedium);
   }
 
   Widget _statusRow(BuildContext context, String label, String value) {
@@ -538,18 +553,18 @@ class _HmiHomePageState extends State<HmiHomePage> {
             width: 130,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF98A6B2),
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF98A6B2)),
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFE2E8EE),
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: const Color(0xFFE2E8EE),
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
