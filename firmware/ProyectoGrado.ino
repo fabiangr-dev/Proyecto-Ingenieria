@@ -197,6 +197,14 @@ void setup() {
 
   server.begin();
   Serial.println("Servidor HTTP iniciado.");
+  Serial.print("Direccion para conectar la HMI: http://");
+  Serial.print(WiFi.softAPIP());
+  Serial.println("/");
+  Serial.println("Endpoints disponibles:");
+  Serial.println("  POST http://<IP>/api/connect");
+  Serial.println("  POST http://<IP>/api/disconnect");
+  Serial.println("  GET  http://<IP>/api/state");
+  Serial.println("  POST http://<IP>/api/command");
 }
 
 void loop() {

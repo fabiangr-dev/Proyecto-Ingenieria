@@ -9,59 +9,94 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  void _toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.light
+          ? ThemeMode.dark
+          : ThemeMode.light;
+    });
+  }
+
+  ThemeData _buildTheme(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      scaffoldBackgroundColor: isDark
+          ? const Color(0xFF1E2329)
+          : const Color(0xFFF3F6F8),
+      colorScheme: isDark
+          ? const ColorScheme.dark(
+              primary: Color(0xFF8CA5B5),
+              secondary: Color(0xFF5F7A8D),
+              surface: Color(0xFF2B323B),
+              error: Color(0xFFB85B5B),
+            )
+          : const ColorScheme.light(
+              primary: Color(0xFF557184),
+              secondary: Color(0xFF718695),
+              surface: Color(0xFFFFFFFF),
+              error: Color(0xFFB85B5B),
+            ),
+      textTheme: ThemeData(brightness: brightness).textTheme.copyWith(
+        headlineSmall: GoogleFonts.rajdhani(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+        titleMedium: GoogleFonts.rajdhani(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.6,
+        ),
+        bodyMedium: GoogleFonts.rajdhani(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.4,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: isDark ? const Color(0xFF2B323B) : const Color(0xFFFFFFFF),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF3E4A56) : const Color(0xFFD4DEE5),
+            width: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'HMI Maquina Dobladora',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF1E2329),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF5F7A8D),
-          secondary: Color(0xFF8EA1AE),
-          surface: Color(0xFF2B323B),
-          error: Color(0xFFB85B5B),
-        ),
-        textTheme: ThemeData.dark().textTheme.copyWith(
-          headlineSmall: GoogleFonts.rajdhani(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFFE4E8EC),
-            letterSpacing: 0.8,
-          ),
-          titleMedium: GoogleFonts.rajdhani(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFFD8DEE4),
-            letterSpacing: 0.6,
-          ),
-          bodyMedium: GoogleFonts.rajdhani(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFFC8D0D8),
-            letterSpacing: 0.4,
-          ),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          color: const Color(0xFF2B323B),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Color(0xFF3E4A56), width: 1.2),
-          ),
-        ),
-      ),
-      home: const HmiHomePage(),
+      themeMode: _themeMode,
+      theme: _buildTheme(Brightness.light),
+      darkTheme: _buildTheme(Brightness.dark),
+      home: HmiHomePage(onToggleTheme: _toggleTheme),
     );
   }
 }
 
 class HmiHomePage extends StatefulWidget {
-  const HmiHomePage({super.key});
+  const HmiHomePage({super.key, required this.onToggleTheme});
+
+  final VoidCallback onToggleTheme;
 
   @override
   State<HmiHomePage> createState() => _HmiHomePageState();
@@ -257,10 +292,12 @@ class _HmiHomePageState extends State<HmiHomePage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2A323B),
+          backgroundColor: Theme.of(dialogContext).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: Color(0xFF495867)),
+            side: BorderSide(
+              color: Theme.of(dialogContext).colorScheme.outline,
+            ),
           ),
           title: Text(
             'Accion detectada',
@@ -288,10 +325,12 @@ class _HmiHomePageState extends State<HmiHomePage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2A323B),
+          backgroundColor: Theme.of(dialogContext).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: Color(0xFF495867)),
+            side: BorderSide(
+              color: Theme.of(dialogContext).colorScheme.outline,
+            ),
           ),
           title: Text(
             title,
@@ -316,7 +355,7 @@ class _HmiHomePageState extends State<HmiHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF252C34),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -327,13 +366,24 @@ class _HmiHomePageState extends State<HmiHomePage> {
             Text(
               'HMI - INTERFAZ DE USUARIO',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF93A5B5),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 13,
               ),
             ),
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: Theme.of(context).brightness == Brightness.dark
+                ? 'Usar tema claro'
+                : 'Usar tema oscuro',
+            onPressed: widget.onToggleTheme,
+            icon: Icon(
+              Theme.of(context).brightness == Brightness.dark
+                  ? Icons.light_mode
+                  : Icons.dark_mode,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Container(
@@ -369,40 +419,10 @@ class _HmiHomePageState extends State<HmiHomePage> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _statusPanel(context),
-          const SizedBox(height: 18),
           _operationPanel(context),
           const SizedBox(height: 18),
           _palletPanel(context),
         ],
-      ),
-    );
-  }
-
-  Widget _statusPanel(BuildContext context) {
-    return Card(
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 220),
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionTitle(context, 'Estado de la Maquina'),
-            const SizedBox(height: 12),
-            _statusRow(context, 'Estado', 'IDLE / LISTA'),
-            _statusRow(context, 'Ciclo actual', 'STANDARD_FOLDING'),
-            _statusRow(context, 'Etapa', '2 / 4'),
-            _statusRow(context, 'Progreso', '50 %'),
-            const SizedBox(height: 14),
-            LinearProgressIndicator(
-              minHeight: 10,
-              value: 0.5,
-              color: const Color(0xFF8CA5B5),
-              backgroundColor: const Color(0xFF394652),
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -485,15 +505,20 @@ class _HmiHomePageState extends State<HmiHomePage> {
                 labelText: 'URL del ESP32 en la red HMI-ESP32',
                 helperText:
                     'Conecta primero el dispositivo a HMI-ESP32 (clave: HMI-12345678)',
-                labelStyle: const TextStyle(color: Color(0xFFB7C4CF)),
-                enabledBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF536474)),
+                labelStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF8CA5B5)),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 filled: true,
-                fillColor: const Color(0xFF262E36),
               ),
             ),
           ],
@@ -544,34 +569,6 @@ class _HmiHomePageState extends State<HmiHomePage> {
     return Text(title, style: Theme.of(context).textTheme.titleMedium);
   }
 
-  Widget _statusRow(BuildContext context, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF98A6B2)),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFFE2E8EE),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _actionButton(
     BuildContext context,
     String label,
@@ -581,13 +578,13 @@ class _HmiHomePageState extends State<HmiHomePage> {
   }) {
     return OutlinedButton.icon(
       onPressed: onPressed ?? () => _showPressedDialog(context, pressedValue),
-      icon: Icon(icon, size: 18, color: const Color(0xFFB7C4CF)),
+      icon: Icon(icon, size: 18),
       label: Text(label),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(176, 56),
-        foregroundColor: const Color(0xFFE2E8EE),
-        side: const BorderSide(color: Color(0xFF536474)),
-        backgroundColor: const Color(0xFF313A44),
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        side: BorderSide(color: Theme.of(context).colorScheme.outline),
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),

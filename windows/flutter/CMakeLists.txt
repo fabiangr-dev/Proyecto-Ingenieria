@@ -29,11 +29,17 @@ endif()
 # === Flutter Library ===
 set(FLUTTER_LIBRARY "${EPHEMERAL_DIR}/flutter_windows.dll")
 
-# Published to parent scope for install step.
-set(FLUTTER_LIBRARY ${FLUTTER_LIBRARY} PARENT_SCOPE)
-set(FLUTTER_ICU_DATA_FILE "${EPHEMERAL_DIR}/icudtl.dat" PARENT_SCOPE)
-set(PROJECT_BUILD_DIR "${PROJECT_DIR}/build/" PARENT_SCOPE)
-set(AOT_LIBRARY "${PROJECT_DIR}/build/windows/app.so" PARENT_SCOPE)
+# Published to parent scope for install step when this directory has one.
+set(FLUTTER_LIBRARY ${FLUTTER_LIBRARY})
+set(FLUTTER_ICU_DATA_FILE "${EPHEMERAL_DIR}/icudtl.dat")
+set(PROJECT_BUILD_DIR "${PROJECT_DIR}/build/")
+set(AOT_LIBRARY "${PROJECT_DIR}/build/windows/app.so")
+if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  set(FLUTTER_LIBRARY ${FLUTTER_LIBRARY} PARENT_SCOPE)
+  set(FLUTTER_ICU_DATA_FILE "${EPHEMERAL_DIR}/icudtl.dat" PARENT_SCOPE)
+  set(PROJECT_BUILD_DIR "${PROJECT_DIR}/build/" PARENT_SCOPE)
+  set(AOT_LIBRARY "${PROJECT_DIR}/build/windows/app.so" PARENT_SCOPE)
+endif()
 
 list(APPEND FLUTTER_LIBRARY_HEADERS
   "flutter_export.h"
