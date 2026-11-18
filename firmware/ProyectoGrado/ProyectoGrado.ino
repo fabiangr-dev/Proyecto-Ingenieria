@@ -61,6 +61,11 @@ void sendJsonResponse(
   client.print(" ");
   client.println(statusText);
   client.println("Content-Type: application/json");
+  client.println("Access-Control-Allow-Origin: *");
+  client.println("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+  client.println("Access-Control-Allow-Headers: Content-Type");
+  client.println("Access-Control-Allow-Private-Network: true");
+  client.println("Vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers");
   client.println("Connection: close");
   client.print("Content-Length: ");
   client.println(body.length());
@@ -82,6 +87,16 @@ void handleRequest(
   Serial.println(requestLine);
   Serial.println("BODY:");
   Serial.println(body);
+
+  if (requestLine.indexOf("OPTIONS ") >= 0) {
+    sendJsonResponse(
+      client,
+      204,
+      "No Content",
+      ""
+    );
+    return;
+  }
 
   if (requestLine.indexOf("POST /api/connect") >= 0) {
     String button = extractJsonValue(body, "button");
@@ -192,14 +207,19 @@ void setup() {
   Serial.println("Punto de acceso WiFi iniciado.");
   Serial.print("Nombre de red: ");
   Serial.println(accessPointSsid);
+  IPAddress esp32Ip = WiFi.softAPIP();
+
   Serial.print("IP del ESP32: ");
-  Serial.println(WiFi.softAPIP());
+  Serial.println(esp32Ip);
 
   server.begin();
   Serial.println("Servidor HTTP iniciado.");
-  Serial.print("Direccion para conectar la HMI: http://");
-  Serial.print(WiFi.softAPIP());
+  Serial.println("========================================");
+  Serial.println("INGRESE ESTA DIRECCION EN LA HMI:");
+  Serial.print("http://");
+  Serial.print(esp32Ip);
   Serial.println("/");
+  Serial.println("========================================");
   Serial.println("Endpoints disponibles:");
   Serial.println("  POST http://<IP>/api/connect");
   Serial.println("  POST http://<IP>/api/disconnect");

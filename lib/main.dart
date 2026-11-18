@@ -108,6 +108,7 @@ class _HmiHomePageState extends State<HmiHomePage> {
   );
   bool _isSending = false;
   bool _isConnected = false;
+  bool _isManualModeVisible = false;
   Timer? _connectionTimer;
 
   Uri _endpoint(String path) {
@@ -132,6 +133,9 @@ class _HmiHomePageState extends State<HmiHomePage> {
 
   Future<void> _disconnect() async {
     _connectionTimer?.cancel();
+    setState(() {
+      _isManualModeVisible = false;
+    });
     await _sendConnectionRequest(
       path: '/api/disconnect',
       buttonLabel: 'DESCONECTAR',
@@ -226,13 +230,13 @@ class _HmiHomePageState extends State<HmiHomePage> {
     });
   }
 
-  Future<void> _sendCommand(String buttonLabel, String command) async {
+  Future<bool> _sendCommand(String buttonLabel, String command) async {
     if (!_isConnected || _isSending) {
       _showResultDialog(
         'Conexion requerida',
         'Presiona CONECTAR antes de enviar comandos.',
       );
-      return;
+      return false;
     }
 
     setState(() {
@@ -256,10 +260,11 @@ class _HmiHomePageState extends State<HmiHomePage> {
           )
           .timeout(const Duration(seconds: 5));
 
-      if (!mounted) return;
+      if (!mounted) return false;
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         _showPressedDialog(context, buttonLabel);
+        return true;
       } else {
         setState(() {
           _isConnected = false;
@@ -268,9 +273,10 @@ class _HmiHomePageState extends State<HmiHomePage> {
           'Error de comunicación',
           'ESP32 respondió con código ${response.statusCode}',
         );
+        return false;
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _isConnected = false;
       });
@@ -278,6 +284,7 @@ class _HmiHomePageState extends State<HmiHomePage> {
         'Fallo de red',
         'No se pudo contactar al ESP32. Verifica la IP y la conexión Wi‑Fi.\n\nError: $e',
       );
+      return false;
     } finally {
       if (mounted) {
         setState(() {
@@ -420,8 +427,10 @@ class _HmiHomePageState extends State<HmiHomePage> {
         padding: const EdgeInsets.all(20),
         children: [
           _operationPanel(context),
-          const SizedBox(height: 18),
-          _palletPanel(context),
+          if (_isManualModeVisible) ...[
+            const SizedBox(height: 18),
+            _palletPanel(context),
+          ],
         ],
       ),
     );
@@ -475,7 +484,24 @@ class _HmiHomePageState extends State<HmiHomePage> {
                   'MODO MANUAL',
                   onPressed: _isSending
                       ? null
-                      : () => _sendCommand('MODO MANUAL', 'manual_mode'),
+                      : () async {
+                          if (_isManualModeVisible) {
+                            setState(() {
+                              _isManualModeVisible = false;
+                            });
+                            return;
+                          }
+
+                          final wasAccepted = await _sendCommand(
+                            'MODO MANUAL',
+                            'manual_mode',
+                          );
+                          if (mounted && wasAccepted) {
+                            setState(() {
+                              _isManualModeVisible = true;
+                            });
+                          }
+                        },
                 ),
                 _actionButton(
                   context,
